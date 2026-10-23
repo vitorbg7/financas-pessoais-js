@@ -1,0 +1,763 @@
+/* Tokens de design
+   Base verde-musgo (a cor do dinheiro), receita em verde, despesa em vermelho-arara,
+   destaque em âmbar. As cores das categorias ficam em js/chart.js. */
+:root {
+  --fundo: #e9efec;
+  --papel: #f8faf9;
+  --painel: #dce6e1;
+  --tinta: #0e2a2f;
+  --tinta-suave: #44605f;
+  --linha: #c3d1ca;
+  --receita: #0b7a5a;
+  --despesa: #bf372b;
+  --destaque: #f4b73f;
+  --sobre-destaque: #1c1500;
+
+  --fonte-titulo: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --fonte-texto: 'Atkinson Hyperlegible', 'Segoe UI', system-ui, sans-serif;
+
+  --raio: 10px;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema='claro']) {
+    --fundo: #0a1a1e;
+    --papel: #102429;
+    --painel: #15303a;
+    --tinta: #e4efeb;
+    --tinta-suave: #9db8b3;
+    --linha: #28454b;
+    --receita: #4fd1a5;
+    --despesa: #ff8b7b;
+    color-scheme: dark;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--fundo);
+  color: var(--tinta);
+  font-family: var(--fonte-texto);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+h1,
+h2 {
+  margin: 0;
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+h2 {
+  font-size: 1.15rem;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 3px solid var(--destaque);
+  outline-offset: 2px;
+}
+
+.pular {
+  position: absolute;
+  left: 1rem;
+  top: -4rem;
+  z-index: 10;
+  padding: 0.5rem 1rem;
+  background: var(--destaque);
+  color: var(--sobre-destaque);
+  border-radius: var(--raio);
+}
+
+.pular:focus {
+  top: 1rem;
+}
+
+/* Topo e navegação de mês */
+.topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 0.5rem;
+}
+
+.topo h1 {
+  font-size: 1.35rem;
+}
+
+.mes {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mes h2 {
+  min-width: 11ch;
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+.botao-icone {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--linha);
+  border-radius: 50%;
+  background: var(--papel);
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.botao-icone:hover {
+  border-color: var(--tinta-suave);
+}
+
+/* Aviso (confirmações e desfazer) */
+.aviso {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: calc(100% - 2rem);
+  max-width: calc(1120px - 2rem);
+  margin: 0.5rem auto 0;
+  padding: 0.65rem 1rem;
+  background: var(--tinta);
+  color: var(--fundo);
+  border-radius: var(--raio);
+}
+
+.aviso[hidden] {
+  display: none;
+}
+
+.aviso .botao-texto {
+  color: var(--destaque);
+}
+
+/* Layout em grade: no celular tudo empilha; no desktop a lateral fica à direita */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    'saldo'
+    'lateral'
+    'lista';
+  gap: 2rem;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 1rem 1rem 2rem;
+}
+
+.saldo {
+  grid-area: saldo;
+}
+
+.lateral {
+  grid-area: lateral;
+}
+
+.lista {
+  grid-area: lista;
+}
+
+@media (min-width: 900px) {
+  .layout {
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+    grid-template-areas:
+      'saldo lateral'
+      'lista lateral';
+    column-gap: 2.5rem;
+    align-items: start;
+  }
+}
+
+/* Saldo: o elemento de destaque da página */
+.saldo {
+  padding-top: 0.5rem;
+}
+
+.saldo-titulo {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--tinta-suave);
+}
+
+.saldo-valor {
+  margin: 0.15rem 0 1rem;
+  font-family: var(--fonte-titulo);
+  font-size: clamp(2.75rem, 9vw, 4.5rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.saldo-valor.negativo {
+  color: var(--despesa);
+}
+
+/* A barra mostra quanto do que entrou já saiu: vermelho = gasto, verde = o que sobrou */
+.barra {
+  height: 1rem;
+  overflow: hidden;
+  background: var(--receita);
+  border-radius: 999px;
+}
+
+.barra.vazia {
+  background: var(--linha);
+}
+
+.barra-gasto {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--despesa);
+  transition: width 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.totais {
+  display: flex;
+  gap: 2.5rem;
+  margin: 1rem 0 0;
+}
+
+.totais dt {
+  font-size: 0.9rem;
+  color: var(--tinta-suave);
+}
+
+.totais dd {
+  margin: 0;
+  font-family: var(--fonte-titulo);
+  font-size: 1.35rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.valor-receita {
+  color: var(--receita);
+}
+
+.valor-despesa {
+  color: var(--despesa);
+}
+
+/* Lateral: painel tingido, sem cartões repetidos */
+.lateral {
+  display: grid;
+  gap: 1.75rem;
+  padding: 1.5rem;
+  background: var(--painel);
+  border-radius: 16px;
+}
+
+.lateral h2 {
+  margin-bottom: 0.9rem;
+}
+
+.form,
+.limite {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.form h2,
+.limite h2 {
+  margin-bottom: 0;
+}
+
+.campo {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.campo > span {
+  font-size: 0.9rem;
+  color: var(--tinta-suave);
+}
+
+input[type='text'],
+input[type='date'],
+input[type='search'],
+select {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--linha);
+  border-radius: 6px;
+  background: var(--papel);
+}
+
+input::placeholder {
+  color: var(--tinta-suave);
+  opacity: 0.8;
+}
+
+input:hover,
+select:hover {
+  border-color: var(--tinta-suave);
+}
+
+.duas-colunas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+/* Controle segmentado de tipo (receita/despesa) */
+.tipo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0.25rem;
+  background: var(--papel);
+  border: 1px solid var(--linha);
+  border-radius: 8px;
+}
+
+.tipo legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.tipo label {
+  position: relative;
+}
+
+.tipo input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.tipo span {
+  display: block;
+  padding: 0.55rem;
+  border-radius: 6px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.tipo input:checked + span {
+  background: var(--tinta);
+  color: var(--fundo);
+}
+
+.tipo input:focus-visible + span {
+  outline: 3px solid var(--destaque);
+  outline-offset: 2px;
+}
+
+.erro {
+  min-height: 1.5em;
+  margin: 0;
+  color: var(--despesa);
+  font-weight: 700;
+}
+
+/* Botões */
+.botao-principal,
+.botao-secundario {
+  min-height: 2.75rem;
+  padding: 0.6rem 1.1rem;
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.botao-principal {
+  border: 0;
+  background: var(--destaque);
+  color: var(--sobre-destaque);
+}
+
+.botao-principal:hover {
+  filter: brightness(0.95);
+}
+
+.botao-secundario {
+  border: 1px solid var(--tinta-suave);
+  background: transparent;
+}
+
+.botao-secundario:hover {
+  background: var(--papel);
+}
+
+.botao-texto {
+  padding: 0.35rem 0.25rem;
+  border: 0;
+  background: none;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.perigo {
+  color: var(--despesa);
+}
+
+.perigo-fundo {
+  background: var(--despesa);
+  color: #fff;
+}
+
+/* Gráfico de rosca */
+.rosca {
+  position: relative;
+  width: min(220px, 70%);
+  margin: 0 auto 1rem;
+}
+
+.rosca canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+}
+
+.rosca-centro {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.rosca-centro strong {
+  font-family: var(--fonte-titulo);
+  font-size: 1.2rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.rosca-centro span {
+  font-size: 0.85rem;
+  color: var(--tinta-suave);
+}
+
+.legenda {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legenda li {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.ponto {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+}
+
+.legenda .percentual {
+  min-width: 4ch;
+  text-align: right;
+  color: var(--tinta-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+.legenda .valor {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.vazio-pequeno {
+  margin: 0;
+  color: var(--tinta-suave);
+}
+
+/* Limite de gastos */
+.limite-linha {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 0.75rem;
+}
+
+progress {
+  width: 100%;
+  height: 0.75rem;
+  border: 0;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--papel);
+  accent-color: var(--receita);
+  appearance: none;
+}
+
+progress::-webkit-progress-bar {
+  background: var(--papel);
+}
+
+progress::-webkit-progress-value {
+  background: var(--receita);
+  transition: width 0.4s ease;
+}
+
+progress::-moz-progress-bar {
+  background: var(--receita);
+}
+
+progress.estourou::-webkit-progress-value {
+  background: var(--despesa);
+}
+
+progress.estourou::-moz-progress-bar {
+  background: var(--despesa);
+}
+
+.limite-texto {
+  min-height: 1.5em;
+  margin: 0;
+}
+
+.limite-texto.estourou {
+  color: var(--despesa);
+  font-weight: 700;
+}
+
+/* Lista de lançamentos */
+.lista-topo {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.filtros {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.75rem;
+}
+
+.lancamentos {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--papel);
+  border-radius: 12px;
+}
+
+.lancamentos:empty {
+  display: none;
+}
+
+.lancamentos li {
+  display: grid;
+  grid-template-columns: 3.2rem 1fr auto auto;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid var(--linha);
+}
+
+.lancamentos li:last-child {
+  border-bottom: 0;
+}
+
+.lancamentos .data {
+  color: var(--tinta-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+.lancamentos .descricao {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+
+.lancamentos .categoria {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  grid-column: 2;
+  font-size: 0.9rem;
+  color: var(--tinta-suave);
+}
+
+.lancamentos .valor {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  font-family: var(--fonte-titulo);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.lancamentos .valor.receita {
+  color: var(--receita);
+}
+
+.lancamentos .valor.despesa {
+  color: var(--despesa);
+}
+
+.lancamentos .excluir {
+  grid-column: 4;
+  grid-row: 1 / span 2;
+  min-height: 2.5rem;
+  padding: 0 0.5rem;
+  border: 0;
+  background: none;
+  color: var(--tinta-suave);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.lancamentos .excluir:hover {
+  color: var(--despesa);
+}
+
+.vazio {
+  padding: 2rem 1rem;
+  text-align: center;
+  background: var(--papel);
+  border: 1px dashed var(--tinta-suave);
+  border-radius: 12px;
+}
+
+.vazio[hidden] {
+  display: none;
+}
+
+.vazio p {
+  max-width: 40ch;
+  margin: 0 auto 1rem;
+}
+
+/* Rodapé */
+.rodape {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 2.5rem;
+  border-top: 1px solid var(--linha);
+  color: var(--tinta-suave);
+}
+
+.rodape p {
+  margin: 0;
+}
+
+.rodape-acoes {
+  display: flex;
+  gap: 1rem;
+}
+
+/* Diálogo de confirmação */
+dialog {
+  width: min(26rem, calc(100% - 2rem));
+  padding: 1.5rem;
+  border: 0;
+  border-radius: 14px;
+  background: var(--papel);
+  color: var(--tinta);
+}
+
+dialog::backdrop {
+  background: rgb(5 20 22 / 0.6);
+}
+
+dialog h2 {
+  margin-bottom: 0.5rem;
+}
+
+.dialogo-acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+/* Celulares estreitos */
+@media (max-width: 480px) {
+  .lancamentos li {
+    grid-template-columns: 1fr auto;
+  }
+
+  .lancamentos .data {
+    grid-column: 1;
+    grid-row: 3;
+    font-size: 0.85rem;
+  }
+
+  .lancamentos .descricao {
+    grid-column: 1;
+  }
+
+  .lancamentos .categoria {
+    grid-column: 1;
+  }
+
+  .lancamentos .valor {
+    grid-column: 2;
+  }
+
+  .lancamentos .excluir {
+    grid-column: 2;
+    grid-row: 3;
+    justify-self: end;
+  }
+
+  .totais {
+    gap: 1.5rem;
+  }
+
+  .rodape-acoes {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

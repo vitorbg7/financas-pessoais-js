@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Finanças pessoais</title>
+  <meta name="description" content="Controle suas receitas e despesas por mês. Os dados ficam só no seu navegador.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230e2a2f'/%3E%3Cpath d='M9 21l5-6 4 3 5-8' fill='none' stroke='%23f4b73f' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <a class="pular" href="#form-titulo">Ir para o formulário</a>
+
+  <header class="topo">
+    <h1>Finanças pessoais</h1>
+    <nav class="mes" aria-label="Escolher mês">
+      <button type="button" id="mes-anterior" class="botao-icone" aria-label="Mês anterior">&#8249;</button>
+      <h2 id="mes-nome" aria-live="polite">Carregando</h2>
+      <button type="button" id="mes-proximo" class="botao-icone" aria-label="Próximo mês">&#8250;</button>
+    </nav>
+  </header>
+
+  <div id="aviso" class="aviso" role="status" hidden>
+    <span id="aviso-texto"></span>
+    <button type="button" id="aviso-acao" class="botao-texto" hidden>Desfazer</button>
+  </div>
+
+  <main class="layout">
+    <section class="saldo" aria-labelledby="saldo-titulo">
+      <h2 id="saldo-titulo" class="saldo-titulo">Saldo do mês</h2>
+      <p id="saldo-valor" class="saldo-valor">R$ 0,00</p>
+      <div class="barra" id="barra" role="img" aria-label="Nenhum lançamento neste mês">
+        <span id="barra-gasto" class="barra-gasto"></span>
+      </div>
+      <dl class="totais">
+        <div>
+          <dt>Entrou</dt>
+          <dd id="total-receitas" class="valor-receita">R$ 0,00</dd>
+        </div>
+        <div>
+          <dt>Saiu</dt>
+          <dd id="total-despesas" class="valor-despesa">R$ 0,00</dd>
+        </div>
+      </dl>
+    </section>
+
+    <aside class="lateral" aria-label="Novo lançamento e resumo">
+      <form id="form" class="form" novalidate>
+        <h2 id="form-titulo">Novo lançamento</h2>
+
+        <fieldset class="tipo">
+          <legend>Tipo</legend>
+          <label><input type="radio" name="tipo" value="despesa" checked><span>Despesa</span></label>
+          <label><input type="radio" name="tipo" value="receita"><span>Receita</span></label>
+        </fieldset>
+
+        <label class="campo">
+          <span>Descrição</span>
+          <input type="text" id="descricao" name="descricao" maxlength="60" autocomplete="off" placeholder="Ex.: Mercado">
+        </label>
+
+        <div class="duas-colunas">
+          <label class="campo">
+            <span>Valor (R$)</span>
+            <input type="text" id="valor" name="valor" inputmode="decimal" autocomplete="off" placeholder="0,00">
+          </label>
+          <label class="campo">
+            <span>Data</span>
+            <input type="date" id="data" name="data">
+          </label>
+        </div>
+
+        <label class="campo">
+          <span>Categoria</span>
+          <select id="categoria" name="categoria"></select>
+        </label>
+
+        <p id="erro-form" class="erro" role="alert"></p>
+        <button type="submit" class="botao-principal">Adicionar lançamento</button>
+      </form>
+
+      <section class="gastos" aria-labelledby="gastos-titulo">
+        <h2 id="gastos-titulo">Para onde foi o dinheiro</h2>
+        <div class="rosca">
+          <canvas id="rosca" aria-hidden="true"></canvas>
+          <div class="rosca-centro">
+            <strong id="rosca-total">R$ 0,00</strong>
+            <span>em despesas</span>
+          </div>
+        </div>
+        <ul id="legenda" class="legenda"></ul>
+        <p id="legenda-vazia" class="vazio-pequeno">Os gastos por categoria aparecem aqui assim que você registrar uma despesa.</p>
+      </section>
+
+      <form id="form-limite" class="limite" novalidate>
+        <h2 id="limite-titulo">Limite de gastos</h2>
+        <div class="limite-linha">
+          <label class="campo">
+            <span>Máximo por mês (R$)</span>
+            <input type="text" id="limite-valor" inputmode="decimal" autocomplete="off" placeholder="Sem limite">
+          </label>
+          <button type="submit" class="botao-secundario">Salvar limite</button>
+        </div>
+        <progress id="limite-progresso" max="100" value="0" hidden aria-labelledby="limite-titulo"></progress>
+        <p id="limite-texto" class="limite-texto" role="status"></p>
+      </form>
+    </aside>
+
+    <section class="lista" aria-labelledby="lista-titulo">
+      <div class="lista-topo">
+        <h2 id="lista-titulo">Lançamentos</h2>
+        <div class="filtros">
+          <label class="campo">
+            <span>Buscar</span>
+            <input type="search" id="busca" autocomplete="off" placeholder="Descrição">
+          </label>
+          <label class="campo">
+            <span>Tipo</span>
+            <select id="filtro-tipo">
+              <option value="todos">Todos</option>
+              <option value="receita">Receitas</option>
+              <option value="despesa">Despesas</option>
+            </select>
+          </label>
+          <label class="campo">
+            <span>Categoria</span>
+            <select id="filtro-categoria"></select>
+          </label>
+        </div>
+      </div>
+
+      <ul id="lancamentos" class="lancamentos"></ul>
+
+      <div id="vazio" class="vazio" hidden>
+        <p id="vazio-texto"></p>
+        <button type="button" id="carregar-exemplo" class="botao-secundario">Carregar dados de exemplo</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="rodape">
+    <p>Seus dados ficam só neste navegador. Nada é enviado para servidor.</p>
+    <div class="rodape-acoes">
+      <button type="button" id="exportar" class="botao-texto">Exportar mês em CSV</button>
+      <button type="button" id="apagar-tudo" class="botao-texto perigo">Apagar todos os dados</button>
+    </div>
+  </footer>
+
+  <dialog id="dialogo-apagar" aria-labelledby="dialogo-titulo">
+    <form method="dialog">
+      <h2 id="dialogo-titulo">Apagar todos os dados?</h2>
+      <p>Todos os lançamentos e o limite de gastos serão removidos deste navegador. Não dá para desfazer.</p>
+      <div class="dialogo-acoes">
+        <button value="cancelar" class="botao-secundario">Cancelar</button>
+        <button value="apagar" class="botao-principal perigo-fundo">Apagar tudo</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>
